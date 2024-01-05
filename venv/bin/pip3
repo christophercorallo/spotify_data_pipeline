@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Users/christophercorallo/stem lord/spotify_data_pipeline/venv/bin/python" "$0" "$@"
+'''exec' "/Users/christophercorallo/stem lord/spotify_data_pipeline/venv/bin/python3" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re

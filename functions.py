@@ -44,3 +44,4 @@ def get_yesterdays_songs(sp_auth, song_dict: dict):
         get_yesterdays_songs(sp_auth, song_dict, before_date = new_before_unix)
     
     return song_df
+

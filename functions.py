@@ -1,6 +1,5 @@
 import datetime
 import pandas as pd
-import time
 import calendar
 
 def validate_data(df: pd.DataFrame):

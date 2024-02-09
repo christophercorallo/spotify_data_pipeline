@@ -1,11 +1,9 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import cred
-import functions
 import pandas as pd
-import datetime
-import calendar
-import pandas_gbq
+import snowflake.connector
+from snowflake.connector.pandas_tools import write_pandas
 
 scope = 'user-read-recently-played'
 
@@ -34,18 +32,31 @@ if __name__ == "__main__":
         date_timestamps.append(song['played_at'][0:10])
 
     song_dict = {
-        'song_name': song_names,
-        'artist_name': artist_names,
-        'played_at': played_at_list,
-        'date_timestamp': date_timestamps
+        'SONG_NAME': song_names,
+        'ARTIST_NAME': artist_names,
+        'PLAYED_AT': played_at_list,
     }
 
     # create dataframe
-    song_df = pd.DataFrame(song_dict, columns=['song_name','artist_name','played_at','date_timestamp'])
+    song_df = pd.DataFrame(song_dict, columns=['SONG_NAME','ARTIST_NAME','PLAYED_AT'])
 
 
-    print('HOORAY')
 
-# load data to bigquery
-song_df.to_gbq('spotify_data_pipeline.recently_played_songs', 'custom-name-408805', if_exists = 'append')
+# write data to snowflake database
 
+# connect to snowflake
+con = snowflake.connector.connect(
+    user = cred.sf_username,
+    password = cred.sf_password,
+    account = cred.sf_account,
+    warehouse = cred.sf_warehouse,
+    database = cred.sf_database,
+    schema = cred.sf_schema
+    )
+
+try:
+    # add data to database
+    success, nchunks, nrows, _ = write_pandas(con, song_df, 'SPOTIFY_RECENTLY_PLAYED')
+finally:
+    # close connection
+    con.close()

@@ -43,36 +43,36 @@ if __name__ == "__main__":
 
 
 
-# write data to snowflake database
+    # write data to snowflake database
 
-# connect to snowflake
-con = snowflake.connector.connect(
-    user = cred.sf_username,
-    password = cred.sf_password,
-    account = cred.sf_account,
-    warehouse = cred.sf_warehouse,
-    database = cred.sf_database,
-    schema = cred.sf_schema
-    )
+    # connect to snowflake
+    con = snowflake.connector.connect(
+        user = cred.sf_username,
+        password = cred.sf_password,
+        account = cred.sf_account,
+        warehouse = cred.sf_warehouse,
+        database = cred.sf_database,
+        schema = cred.sf_schema
+        )
 
-try:
-    # query date of latest record
-    cur = con.cursor()
-    most_recent = cur.execute(
-        ('select played_at '
-        'from SPOTIFY_DATA.SPOTIFY_RECENTLY_PLAYED.SPOTIFY_RECENTLY_PLAYED '
-        'order by played_at desc '
-        'limit 1;')
-        ).fetchone()[0]
-        
-    # remove rows from dataframe after most_recent from query
-    for id, date in enumerate(song_df['PLAYED_AT']):
-        current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
-        if current_date < most_recent:
-            song_df.drop(id, inplace = True)
+    try:
+        # query date of latest record
+        cur = con.cursor()
+        most_recent = cur.execute(
+            ('select played_at '
+            'from SPOTIFY_DATA.SPOTIFY_RECENTLY_PLAYED.SPOTIFY_RECENTLY_PLAYED '
+            'order by played_at desc '
+            'limit 1;')
+            ).fetchone()[0]
             
-    # add data to database
-    success, nchunks, nrows, _ = write_pandas(con, song_df, 'SPOTIFY_RECENTLY_PLAYED')
-finally:
-    # close connection
-    con.close()
+        # remove rows from dataframe after most_recent from query
+        for id, date in enumerate(song_df['PLAYED_AT']):
+            current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+            if current_date < most_recent:
+                song_df.drop(id, inplace = True)
+                
+        # add data to database
+        success, nchunks, nrows, _ = write_pandas(con, song_df, 'SPOTIFY_RECENTLY_PLAYED')
+    finally:
+        # close connection
+        con.close()

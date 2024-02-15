@@ -4,6 +4,7 @@ import cred
 import pandas as pd
 import snowflake.connector
 from snowflake.connector.pandas_tools import write_pandas
+import datetime
 
 scope = 'user-read-recently-played'
 
@@ -55,6 +56,21 @@ con = snowflake.connector.connect(
     )
 
 try:
+    # query date of latest record
+    cur = con.cursor()
+    most_recent = cur.execute(
+        ('select played_at '
+        'from SPOTIFY_DATA.SPOTIFY_RECENTLY_PLAYED.SPOTIFY_RECENTLY_PLAYED '
+        'order by played_at desc '
+        'limit 1;')
+        ).fetchone()[0]
+        
+    # remove rows from dataframe after most_recent from query
+    for id, date in enumerate(song_df['PLAYED_AT']):
+        current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+        if current_date < most_recent:
+            song_df.drop(id, inplace = True)
+            
     # add data to database
     success, nchunks, nrows, _ = write_pandas(con, song_df, 'SPOTIFY_RECENTLY_PLAYED')
 finally:

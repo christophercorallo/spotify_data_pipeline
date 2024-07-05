@@ -1,8 +1,9 @@
 
 cred.py
-airflow-venv
+venv
 __pycache__
 .env
 docker-compose.yaml
 .DS_Store
 .cache
+logs

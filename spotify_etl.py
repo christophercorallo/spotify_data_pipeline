@@ -6,29 +6,26 @@ import snowflake.connector
 from snowflake.connector.pandas_tools import write_pandas
 import datetime
 
-def run_spotify_etl():
-
-    scope = 'user-read-recently-played'
-
+def connect_to_spotify(scope):
     # authenticate api
     sp = spotipy.Spotify(
         auth_manager=SpotifyOAuth(client_id=cred.client_id, client_secret=cred.client_secret, redirect_uri=cred.redirect_url, scope=scope)
         )
+    # retrieve data from api
+    results = sp.current_user_recently_played()  
+    return results
 
+def load_songs_to_df(songs):
+    # define lists
     song_names = []
     artist_names = []
     played_at_list = []
-    date_timestamps = []
-
-    # retrieve data from api
-    results = sp.current_user_recently_played()
 
     # add data to lists
-    for song in results['items']:
+    for song in songs['items']:
         song_names.append(song['track']['name'])
         artist_names.append(song['track']['artists'][0]['name'])
         played_at_list.append(song['played_at'])
-        date_timestamps.append(song['played_at'][0:10])
 
     song_dict = {
         'SONG_NAME': song_names,
@@ -39,10 +36,9 @@ def run_spotify_etl():
     # create dataframe
     song_df = pd.DataFrame(song_dict, columns=['SONG_NAME','ARTIST_NAME','PLAYED_AT'])
 
+    return song_df
 
-
-    # write data to snowflake database
-
+def write_data_to_snowflake(song_df):
     # connect to snowflake
     con = snowflake.connector.connect(
         user = cred.sf_username,
@@ -75,4 +71,6 @@ def run_spotify_etl():
         # close connection
         con.close()
 
-run_spotify_etl()
+recent_songs = connect_to_spotify('user-read-recently-played')
+recent_songs_df = load_songs_to_df(recent_songs)
+write_data_to_snowflake(recent_songs_df)

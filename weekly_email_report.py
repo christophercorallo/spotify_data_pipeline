@@ -33,17 +33,17 @@ def connect_to_gmail_api(scopes):
     
   return creds
   
-def send_email(creds):
+def send_email(creds, top_songs_df, top_artists_df):
   try:
     # connect to gmail API
     service = build("gmail", "v1", credentials=creds)
     message = EmailMessage()
 
     # set message fields
-    message.set_content("testing email broken up into functions")
+    message.set_content(f"Your top 5 artists this week were {[top_artists_df.iloc[i]['Artist'] for i in range(len(top_artists_df))]} and your top 5 songs were  {[top_songs_df.iloc[i]['Song'] for i in range(len(top_songs_df))]}")
     message["To"] = cred.receiver_email
     message["From"] = cred.sender_email
-    message["Subject"] = "TESTING123"
+    message["Subject"] = "Your Weekly Spotify Wrapped :)"
 
     # encoded message
     encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
@@ -129,9 +129,8 @@ def fetch_top_weekly_artists(con, close_connection = True):
       con.close()
 
 if __name__ == "__main__":
-  # creds = connect_to_gmail_api(SCOPES)
-  # send_email(creds)
   con = connect_to_snowflake()
   top_songs = fetch_top_weekly_songs(con, close_connection=False)
   top_artists = fetch_top_weekly_artists(con)
-  print("HOORAY!!!")
+  creds = connect_to_gmail_api(SCOPES)
+  send_email(creds, top_songs, top_artists)

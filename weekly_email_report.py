@@ -8,6 +8,7 @@ import base64
 from email.message import EmailMessage
 import cred
 from spotify_etl import connect_to_snowflake
+import pandas as pd
 
 # Define scope
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
@@ -79,8 +80,15 @@ def fetch_top_weekly_songs(con, close_connection = True):
       "limit 5;"
       )
     )
+    # create top artist and song count lists for dataframe
+    top_songs, top_song_count = [], []
     for (col1, col2) in cur:
-        print('{0}, {1}'.format(col1, col2))
+        top_songs.append(col1)
+        top_song_count.append(col2)
+    
+    # create dataframe
+    top_songs_df = pd.DataFrame({"Song": top_songs, "Song Count": top_song_count}, columns=["Song","Song Count"])
+    return top_songs_df
 
   finally:
     if close_connection:
@@ -105,8 +113,15 @@ def fetch_top_weekly_artists(con, close_connection = True):
       "limit 5;"
       )
     )
+    # create top artist and song count lists for dataframe
+    top_artists, top_artist_count = [], []
     for (col1, col2) in cur:
-        print('{0}, {1}'.format(col1, col2))
+        top_artists.append(col1)
+        top_artist_count.append(col2)
+    
+    # create dataframe
+    top_artist_df = pd.DataFrame({"Artist": top_artists, "Artist Song Count": top_artist_count}, columns=["Artist","Artist Song Count"])
+    return top_artist_df
 
   finally:
     if close_connection:
@@ -114,8 +129,9 @@ def fetch_top_weekly_artists(con, close_connection = True):
       con.close()
 
 if __name__ == "__main__":
-  creds = connect_to_gmail_api(SCOPES)
+  # creds = connect_to_gmail_api(SCOPES)
   # send_email(creds)
-  # con = connect_to_snowflake()
-  # fetch_top_weekly_songs(con, close_connection=False)
-  # fetch_top_weekly_artists(con)
+  con = connect_to_snowflake()
+  top_songs = fetch_top_weekly_songs(con, close_connection=False)
+  top_artists = fetch_top_weekly_artists(con)
+  print("HOORAY!!!")

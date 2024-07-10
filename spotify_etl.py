@@ -38,7 +38,7 @@ def load_songs_to_df(songs):
 
     return song_df
 
-def write_data_to_snowflake(song_df):
+def connect_to_snowflake():
     # connect to snowflake
     con = snowflake.connector.connect(
         user = cred.sf_username,
@@ -48,6 +48,9 @@ def write_data_to_snowflake(song_df):
         database = cred.sf_database,
         schema = cred.sf_schema
         )
+    return con
+
+def write_data_to_snowflake(song_df, con):
 
     try:
         # query date of latest record
@@ -73,4 +76,5 @@ def write_data_to_snowflake(song_df):
 
 recent_songs = connect_to_spotify('user-read-recently-played')
 recent_songs_df = load_songs_to_df(recent_songs)
-write_data_to_snowflake(recent_songs_df)
+con = connect_to_snowflake()
+write_data_to_snowflake(recent_songs_df,con)

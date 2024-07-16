@@ -39,14 +39,14 @@ def load_songs_to_df(songs):
 def load_df_to_csv(df):
     last_csv_row = pd.read_csv('spotify_listening_data.csv').iloc[-1:,:].values
     if last_csv_row.any():
-        most_recent = datetime.datetime.strptime(last_csv_row[0,2], '%Y-%m-%dT%H:%M:%S.%fZ')
+        most_recent = datetime.datetime.strptime(last_csv_row[0,3], '%Y-%m-%dT%H:%M:%S.%fZ')
 
         for id, date in enumerate(df['PLAYED_AT']):
             current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
             if current_date <= most_recent:
                 df.drop(id, inplace = True)
 
-    df.to_csv('spotify_listening_data.csv', mode='a', index=False, header=False)
+    df.to_csv('spotify_listening_data.csv', mode='a', header=False)
 
 if __name__ == "__main__":
     recent_songs = connect_to_spotify('user-read-recently-played')

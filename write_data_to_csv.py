@@ -52,4 +52,3 @@ if __name__ == "__main__":
     recent_songs = connect_to_spotify('user-read-recently-played')
     recent_songs_df = load_songs_to_df(recent_songs)
     load_df_to_csv(recent_songs_df)
-

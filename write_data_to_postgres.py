@@ -2,7 +2,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import cred
 import pandas as pd
-import datetime
+from sqlalchemy import create_engine
 
 def connect_to_spotify(scope):
     # authenticate api
@@ -36,19 +36,13 @@ def load_songs_to_df(songs):
 
     return song_df
 
-def load_df_to_csv(df):
-    last_csv_row = pd.read_csv('spotify_listening_data.csv').iloc[-1:,:].values
-    if last_csv_row.any():
-        most_recent = datetime.datetime.strptime(last_csv_row[0,3], '%Y-%m-%dT%H:%M:%S.%fZ')
+def write_data_to_postgres(song_df):
+    # connect to postgres
+    con = create_engine(cred.postgres_url)
+    # write songs to postgres
+    song_df.to_sql('recently_played', con, schema="spotify_user_data",if_exists="append", index=False)
 
-        for id, date in enumerate(df['PLAYED_AT']):
-            current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
-            if current_date <= most_recent:
-                df.drop(id, inplace = True)
+recent_songs = connect_to_spotify('user-read-recently-played')
+recent_songs_df = load_songs_to_df(recent_songs)
+write_data_to_postgres(recent_songs_df)
 
-    df.to_csv('spotify_listening_data.csv', mode='a', header=False)
-
-if __name__ == "__main__":
-    recent_songs = connect_to_spotify('user-read-recently-played')
-    recent_songs_df = load_songs_to_df(recent_songs)
-    load_df_to_csv(recent_songs_df)

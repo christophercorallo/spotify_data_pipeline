@@ -147,3 +147,15 @@ def fetch_top_weekly_artists(con, close_connection = True):
     if close_connection:
       # close connection
       con.close()
+
+def load_df_to_csv(df):
+    last_csv_row = pd.read_csv('spotify_listening_data.csv').iloc[-1:,:].values
+    if last_csv_row.any():
+        most_recent = datetime.datetime.strptime(last_csv_row[0,3], '%Y-%m-%dT%H:%M:%S.%fZ')
+
+        for id, date in enumerate(df['PLAYED_AT']):
+            current_date = datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
+            if current_date <= most_recent:
+                df.drop(id, inplace = True)
+
+    df.to_csv('spotify_listening_data.csv', mode='a', header=False)

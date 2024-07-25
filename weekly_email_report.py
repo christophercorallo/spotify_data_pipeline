@@ -8,14 +8,17 @@ import base64
 from email.message import EmailMessage
 import cred
 import pandas as pd
+from write_data_to_postgres import connect_to_postgres
 
 # Define scope
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 def connect_to_gmail_api(scopes):
   # get credentials from JSON access token
-  if os.path.exists("token.json"):
+  if os.path.exists("/Users/christophercorallo/projects/spotify_data_pipeline/token.json"):
     creds = Credentials.from_authorized_user_file("token.json", scopes)
+  else:
+    creds = None
   if not creds or not creds.valid:
     # refresh JSON token if necessary
     if creds and creds.expired and creds.refresh_token:
@@ -32,14 +35,28 @@ def connect_to_gmail_api(scopes):
     
   return creds
   
-def send_email(creds, top_songs_df, top_artists_df):
+def send_email(creds, top_songs, top_artists):
   try:
     # connect to gmail API
     service = build("gmail", "v1", credentials=creds)
     message = EmailMessage()
 
     # set message fields
-    message.set_content(f"Your top 5 artists this week were {[top_artists_df.iloc[i]['Artist'] for i in range(len(top_artists_df))]} and your top 5 songs were  {[top_songs_df.iloc[i]['Song'] for i in range(len(top_songs_df))]}")
+    message.set_content(f"""
+                        ARTISTS
+                        1. {top_artists[0][0]} with {top_artists[0][1]} songs played
+                        2. {top_artists[1][0]} with {top_artists[1][1]} songs played
+                        3. {top_artists[2][0]} with {top_artists[2][1]} songs played
+                        4. {top_artists[3][0]} with {top_artists[3][1]} songs played
+                        5. {top_artists[4][0]} with {top_artists[4][1]} songs played
+
+                        SONGS
+                        1. {top_songs[0][0]} with {top_songs[0][1]} listens
+                        2. {top_songs[1][0]} with {top_songs[1][1]} listens
+                        3. {top_songs[2][0]} with {top_songs[2][1]} listens
+                        4. {top_songs[3][0]} with {top_songs[3][1]} listens
+                        5. {top_songs[4][0]} with {top_songs[4][1]} listens
+                        """)
     message["To"] = cred.receiver_email
     message["From"] = cred.sender_email
     message["Subject"] = "Your Weekly Spotify Wrapped :)"
@@ -61,7 +78,26 @@ def send_email(creds, top_songs_df, top_artists_df):
     # print error message if any (hopefully not)
     print(f"An error occurred: {error}")
 
-if __name__ == "__main__":
-  # creds = connect_to_gmail_api(SCOPES)
-  # send_email(creds, top_songs, top_artists)
-    pass
+def fetch_top_weekly(con):
+  # initialize cursor
+  cur = con.cursor()
+
+  song_query = "with last_weeks_songs as (select distinct \"SONG_NAME\", \"ARTIST_NAME\", TO_TIMESTAMP(\"PLAYED_AT\",'YYYY-MM-DDTHH24:MI:SS.MSZ') as play_time from spotify_user_data.\"recently_played\") select \"SONG_NAME\", count(\"SONG_NAME\") as total from last_weeks_songs WHERE play_time >= current_date - interval '7 days' group by 1 order by total desc limit 5;"  
+  artist_query = "with last_weeks_artists as (select distinct \"SONG_NAME\", \"ARTIST_NAME\", TO_TIMESTAMP(\"PLAYED_AT\",'YYYY-MM-DDTHH24:MI:SS.MSZ') as play_time from spotify_user_data.\"recently_played\") select \"ARTIST_NAME\", count(\"ARTIST_NAME\") as total from last_weeks_artists WHERE play_time >= current_date - interval '7 days' group by 1 order by total desc limit 5;"
+  
+  try:
+    cur.execute(artist_query)
+    top_artists = cur.fetchall()
+    cur.execute(song_query)
+    top_songs = cur.fetchall()
+  finally:
+    cur.close()
+  
+  return top_songs, top_artists
+
+
+connection = connect_to_postgres()
+top_songs, top_artists = fetch_top_weekly(connection)
+creds = connect_to_gmail_api(SCOPES)
+send_email(creds, top_songs, top_artists)
+print("HOORAY!!!")

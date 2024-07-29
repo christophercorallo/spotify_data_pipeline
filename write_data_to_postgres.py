@@ -1,15 +1,15 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import cred
 import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
 import datetime
+import os
 
 def connect_to_spotify(scope):
     # authenticate api
     sp = spotipy.Spotify(
-        auth_manager=SpotifyOAuth(client_id=cred.client_id, client_secret=cred.client_secret, redirect_uri=cred.redirect_url, scope=scope)
+        auth_manager=SpotifyOAuth(client_id=os.environ['CLIENT_ID'], client_secret=os.environ['CLIENT_SECRET'], redirect_uri=os.environ['REDIRECT_URL'], scope=scope)
         )
     # retrieve data from api
     results = sp.current_user_recently_played()  
@@ -41,9 +41,9 @@ def load_songs_to_df(songs):
 def connect_to_postgres():
     # connect to postgres database using psycopg
     conn = psycopg2.connect(database = "spotify_data", 
-                    user = cred.postgres_username, 
+                    user = os.environ['POSTGRES_USERNAME'], 
                     host= 'localhost',
-                    password = cred.postgres_password,
+                    password = os.environ['POSTGRES_PASSWORD'],
                     port = 5432,
                     options="-c search_path=spotify_user_data")
     return conn # return connection, NOT CURSOR

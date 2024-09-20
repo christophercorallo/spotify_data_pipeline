@@ -4,15 +4,15 @@ import pandas as pd
 import psycopg2
 import psycopg2.extras as extras
 import datetime
-import os
+import cred
 
 def connect_to_spotify(scope):
     # authenticate api
     sp = spotipy.Spotify(
-        auth_manager=SpotifyOAuth(client_id=os.environ['CLIENT_ID'], client_secret=os.environ['CLIENT_SECRET'], redirect_uri=os.environ['REDIRECT_URL'], scope=scope)
+        auth_manager=SpotifyOAuth(client_id=cred.client_id, client_secret=cred.client_secret, redirect_uri=cred.redirect_url, scope=scope)
         )
     # retrieve data from api
-    results = sp.current_user_recently_played()  
+    results = sp.current_user_recently_played() 
     return results
 
 def load_songs_to_df(songs):
@@ -41,9 +41,9 @@ def load_songs_to_df(songs):
 def connect_to_postgres():
     # connect to postgres database using psycopg
     conn = psycopg2.connect(database = "spotify_data", 
-                    user = os.environ['POSTGRES_USERNAME'], 
+                    user = cred.postgres_username, 
                     host= 'localhost',
-                    password = os.environ['POSTGRES_PASSWORD'],
+                    password = cred.postgres_password,
                     port = 5432,
                     options="-c search_path=spotify_user_data")
     return conn # return connection, NOT CURSOR
@@ -83,3 +83,4 @@ recent_songs_df = load_songs_to_df(recent_songs)
 connection = connect_to_postgres()
 remove_duplicates(connection,recent_songs_df)
 write_data_to_postgres(connection,recent_songs_df)
+print("HOORAY")
